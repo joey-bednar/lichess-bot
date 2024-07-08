@@ -41,8 +41,8 @@ engine:                            # Engine settings.
     # max_depth: 10                # How many moves from the start to take from online books. Default is no limit.
     chessdb_book:
       enabled: false               # Whether or not to use chessdb book.
-      min_time: 20                 # Minimum time (in seconds) to use chessdb book.
-      move_quality: "good"         # One of "all", "good", "best".
+      min_time: 120                 # Minimum time (in seconds) to use chessdb book.
+      move_quality: "best"         # One of "all", "good", "best".
       min_depth: 20                # Only for move_quality: "best".
     lichess_cloud_analysis:
       enabled: false               # Whether or not to use lichess cloud analysis.
@@ -126,7 +126,7 @@ challenge:                         # Incoming challenges.
   min_days: 1                      # Minimum number of days per move to accept a challenge for a correspondence game.
   variants:                        # Chess variants to accept (https://lichess.org/variant).
     - standard
-    - fromPosition
+    # - fromPosition
   time_controls:                   # Time controls to accept (bots are not allowed to play ultraBullet).
     - bullet
     - blitz
@@ -135,7 +135,7 @@ challenge:                         # Incoming challenges.
 #   - correspondence
   modes:                           # Game modes to accept.
     - casual                       # Unrated games.
-    # - rated                        # Rated games - must comment if the engine doesn't try to win.
+    - rated                        # Rated games - must comment if the engine doesn't try to win.
 # block_list:                      # List of users from which the challenges are always declined.
 #   - user1
 #   - user2

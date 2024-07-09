@@ -2,7 +2,7 @@ token: "xxxxxxxxxxxxxxxxxxxxxx"    # Lichess OAuth2 Token.
 url: "https://lichess.org/"        # Lichess base URL.
 
 engine:                            # Engine settings.
-  dir: "../annie/build/"                # Directory containing the engine. This can be an absolute path or one relative to lichess-bot/.
+  dir: "../../"                # Directory containing the engine. This can be an absolute path or one relative to lichess-bot/.
   name: "annie"              # Binary name of the engine to use.
   working_dir: ""                  # Directory where the chess engine will read and write files. If blank or missing, the current directory is used.
                                    # NOTE: If working_dir is set, the engine will look for files and directories relative to this directory, not where lichess-bot was launched. Absolute paths are unaffected.
@@ -163,14 +163,16 @@ greeting:
                                    # "all" - every game is written to a single file named "{Bot name} games.pgn"
 
 matchmaking:
-  allow_matchmaking: false         # Set it to 'true' to challenge other bots.
+  allow_matchmaking: true         # Set it to 'true' to challenge other bots.
   allow_during_games: false        # Set it to 'true' to create challenges during long games.
   challenge_variant: "random"      # If set to 'random', the bot will choose one variant from the variants enabled in 'challenge.variants'.
-  challenge_timeout: 30            # Create a challenge after being idle for 'challenge_timeout' minutes. The minimum is 1 minute.
+  challenge_timeout: 15            # Create a challenge after being idle for 'challenge_timeout' minutes. The minimum is 1 minute.
   challenge_initial_time:          # Initial time in seconds of the challenge (to be chosen at random).
     - 60
     - 180
+    - 300
   challenge_increment:             # Increment in seconds of the challenge (to be chosen at random).
+    - 0
     - 1
     - 2
 #  challenge_days:                 # Days for correspondence challenge (to be chosen at random).
@@ -181,7 +183,7 @@ matchmaking:
   opponent_rating_difference: 300  # The maximum difference in rating between the bot's rating and opponent's rating.
   rating_preference: "none"        # One of "none", "high", "low".
   opponent_allow_tos_violation: false # Set to 'true' to allow challenging bots that violated the Lichess Terms of Service.
-  challenge_mode: "random"         # Set it to the mode in which challenges are sent. Possible options are 'casual', 'rated' and 'random'.
+  challenge_mode: "rated"         # Set it to the mode in which challenges are sent. Possible options are 'casual', 'rated' and 'random'.
   challenge_filter: none           # If a bot declines a challenge, do not issue a similar challenge to that bot. Possible options are 'none', 'coarse', and 'fine'.
 # block_list:                      # The list of bots that will not be challenged
 #   - user1

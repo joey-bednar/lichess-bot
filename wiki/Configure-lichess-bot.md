@@ -143,6 +143,8 @@ will precede the `go` command to start thinking with `sd 5`. The other `go_comma
     - `offer_draw_moves`: The absolute value of the evaluation has to be less than or equal to `offer_draw_score` for `offer_draw_moves` amount of moves for the bot to offer/accept draw.
     - `offer_draw_pieces`: The bot only offers/accepts draws if the position has less than or equal to `offer_draw_pieces` pieces.
 
+  Note: If a game reaches 300 moves and no checkmate is delivered on move 300, it is adjudicated as a draw and shows up in the logs as _draw by agreement_ (see [this discussion](https://lichess.org/forum/general-chess-discussion/lichess-300-move-rule-forced-draw) and [this commit](https://github.com/lichess-org/lila/commit/f8921999115878a98431cd722b267281793b7f6f)). That's a lichess-specific behavior which doesn't depend on lichess-bot version or configuration.
+
 ## Options for correspondence games
 - `correspondence` These options control how the engine behaves during correspondence games.
   - `move_time`: How many seconds to think for each move.
@@ -154,6 +156,7 @@ will precede the `go` command to start thinking with `sd 5`. The other `go_comma
 - `challenge`: Control what kind of games for which the bot should accept challenges. All of the following options must be satisfied by a challenge to be accepted.
   - `concurrency`: The maximum number of games to play simultaneously.
   - `sort_by`: Whether to start games by the best rated/titled opponent `"best"` or by first-come-first-serve `"first"`.
+  - `preference`: Whether to prioritize human opponents, bot opponents, or treat them equally.
   - `accept_bot`: Whether to accept challenges from other bots.
   - `only_bot`: Whether to only accept challenges from other bots.
   - `max_increment`: The maximum value of time increment.
@@ -249,6 +252,7 @@ will precede the `go` command to start thinking with `sd 5`. The other `go_comma
 
     The `challenge_filter` option can be useful if your matchmaking settings result in a lot of declined challenges. The bots that accept challenges will be challenged more often than those that have declined. The filter will remain until lichess-bot quits or the connection with lichess.org is reset.
   - `block_list`: An indented list of usernames of bots that will not be challenged. If this option is not present, then the list is considered empty.
+  - `include_challenge_block_list`: If `true`, do not send challenges to the bots listed in the `challenge: block_list`. Default is `false`.
   - `overrides`: Create variations on the matchmaking settings above for more specific circumstances. If there are any subsections under `overrides`, the settings below that will override the settings in the matchmaking section. Any settings that do not appear will be taken from the settings above. <br/> <br/>
   The overrides section must have the following:
     - Name: A unique name must be given for each override. In the example configuration below, `easy_chess960` and `no_pressure_correspondence` are arbitrary strings to name the subsections and they are unique.

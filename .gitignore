@@ -1,5 +1,5 @@
 *.yml
-!annie.yml
+!amelia.yml
 **/__pycache__
 /engines/*
 !/engines/README.md

@@ -190,12 +190,6 @@ class ChallengeType(TypedDict, total=False):
     initialFen: str
 
 
-class ChallengeSentType(TypedDict, total=False):
-    """Type hint for challenge sent."""
-
-    challenge: ChallengeType
-
-
 class EventType(TypedDict, total=False):
     """Type hint for event."""
 
@@ -255,6 +249,7 @@ class GameEventType(TypedDict, total=False):
 
 
 CONTROL_QUEUE_TYPE = Queue[EventType]
+PGN_QUEUE_TYPE = Queue[EventType]
 
 
 class PublicDataType(TypedDict, total=False):

@@ -10,9 +10,9 @@ import os
 import sys
 import stat
 import shutil
-import importlib
 import tarfile
 import datetime
+import logging
 from multiprocessing import Manager
 from queue import Queue
 import test_bot.lichess
@@ -23,7 +23,7 @@ from lib.engine_wrapper import test_suffix
 from lib.types import CONFIG_DICT_TYPE
 if "pytest" not in sys.modules:
     sys.exit(f"The script {os.path.basename(__file__)} should only be run by pytest.")
-lichess_bot = importlib.import_module("lichess-bot")
+from lib import lichess_bot
 
 platform = sys.platform
 file_extension = ".exe" if platform == "win32" else ""
@@ -31,7 +31,7 @@ stockfish_path = f"./TEMP/sf{file_extension}"
 
 
 def download_sf() -> None:
-    """Download Stockfish 15."""
+    """Download Stockfish 16."""
     if os.path.exists(stockfish_path):
         return
 
@@ -86,7 +86,7 @@ download_sf()
 if platform == "win32":
     download_lc0()
     download_sjeng()
-logging_level = lichess_bot.logging.DEBUG
+logging_level = logging.DEBUG
 testing_log_file_name = None
 lichess_bot.logging_configurer(logging_level, testing_log_file_name, None, False)
 lichess_bot.logger.info("Downloaded engines")
@@ -284,7 +284,7 @@ def test_homemade() -> None:
                                        "bo vs b - zzzzzzzz.pgn"))
 
 
-@pytest.mark.timeout(30, method="thread")
+@pytest.mark.timeout(60, method="thread")
 def test_buggy_engine() -> None:
     """Test lichess-bot with an engine that causes a timeout error within python-chess."""
     with open("./config.yml.default") as file:
@@ -294,15 +294,17 @@ def test_buggy_engine() -> None:
 
     def engine_path(CONFIG: CONFIG_DICT_TYPE) -> str:
         dir: str = CONFIG["engine"]["dir"]
-        name: str = CONFIG["engine"]["name"]
-        return os.path.join(dir, name)
+        name: str = CONFIG["engine"]["name"].removesuffix(".py")
+        path = os.path.join(dir, name)
+        if platform == "win32":
+            path += ".bat"
+        else:
+            st = os.stat(path)
+            os.chmod(path, st.st_mode | stat.S_IEXEC)
+        return path
 
-    if platform == "win32":
-        CONFIG["engine"]["name"] = "buggy_engine.bat"
-    else:
-        CONFIG["engine"]["name"] = "buggy_engine"
-        st = os.stat(engine_path(CONFIG))
-        os.chmod(engine_path(CONFIG), st.st_mode | stat.S_IEXEC)
+    CONFIG["engine"]["name"] = "buggy_engine.py"
+    CONFIG["engine"]["interpreter"] = "python" if platform == "win32" else "python3"
     CONFIG["engine"]["uci_options"] = {"go_commands": {"movetime": 100}}
     CONFIG["pgn_directory"] = "TEMP/bug_game_record"
 

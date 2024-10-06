@@ -70,7 +70,7 @@ def config_assert(assertion: bool, error_message: str) -> None:
 
 
 def config_warn(assertion: bool, warning_message: str) -> None:
-    """Raise an exception if an assertion is false."""
+    """Print a warning message if an assertion is false."""
     if not assertion:
         logger.warning(warning_message)
 
@@ -148,6 +148,9 @@ def insert_default_values(CONFIG: CONFIG_DICT_TYPE) -> None:
     set_config_default(CONFIG, key="pgn_directory", default=None)
     set_config_default(CONFIG, key="pgn_file_grouping", default="game", force_empty_values=True)
     set_config_default(CONFIG, key="max_takebacks_accepted", default=0, force_empty_values=True)
+    set_config_default(CONFIG, "engine", key="interpreter", default=None)
+    set_config_default(CONFIG, "engine", key="interpreter_options", default=[], force_empty_values=True)
+    change_value_to_list(CONFIG, "engine", key="interpreter_options")
     set_config_default(CONFIG, "engine", key="working_dir", default=os.getcwd(), force_empty_values=True)
     set_config_default(CONFIG, "engine", key="silence_stderr", default=False)
     set_config_default(CONFIG, "engine", "draw_or_resign", key="offer_draw_enabled", default=False)
@@ -290,9 +293,29 @@ def validate_config(CONFIG: CONFIG_DICT_TYPE) -> None:
             config_assert(online_section.get("move_quality") != "suggest" or not online_section.get("enabled"),
                           f"XBoard engines can't be used with `move_quality` set to `suggest` in {subsection}.")
 
+    config_warn(CONFIG["challenge"]["concurrency"] > 0, "With challenge.concurrency set to 0, the bot won't accept or create "
+                                                        "any challenges.")
+
     config_assert(CONFIG["challenge"]["sort_by"] in ["best", "first"], "challenge.sort_by can be either `first` or `best`.")
     config_assert(CONFIG["challenge"]["preference"] in ["none", "human", "bot"],
                   "challenge.preference should be `none`, `human`, or `bot`.")
+
+    min_max_template = ("challenge.max_{setting} < challenge.min_{setting} will result "
+                        "in no {game_type} challenges being accepted.")
+    for setting in ["increment", "base", "days"]:
+        game_type = "correspondence" if setting == "days" else "real-time"
+        config_warn(CONFIG["challenge"][f"min_{setting}"] <= CONFIG["challenge"][f"max_{setting}"],
+                    min_max_template.format(setting=setting, game_type=game_type))
+
+    matchmaking = CONFIG["matchmaking"]
+    matchmaking_enabled = matchmaking["allow_matchmaking"]
+
+    if matchmaking_enabled:
+        config_warn(matchmaking["opponent_min_rating"] <= matchmaking["opponent_max_rating"],
+                    "matchmaking.opponent_max_rating < matchmaking.opponent_min_rating will result in "
+                    "no challenges being created.")
+        config_warn(matchmaking.get("opponent_rating_difference", 0) >= 0,
+                    "matchmaking.opponent_rating_difference < 0 will result in no challenges being created.")
 
     pgn_directory = CONFIG["pgn_directory"]
     in_docker = os.environ.get("LICHESS_BOT_DOCKER")
@@ -306,9 +329,6 @@ def validate_config(CONFIG: CONFIG_DICT_TYPE) -> None:
     config_assert(config_pgn_choice in valid_pgn_grouping_options,
                   f"The `pgn_file_grouping` choice of `{config_pgn_choice}` is not valid. "
                   f"Please choose from {valid_pgn_grouping_options}.")
-
-    matchmaking = CONFIG.get("matchmaking") or {}
-    matchmaking_enabled = matchmaking.get("allow_matchmaking") or False
 
     def has_valid_list(name: str) -> bool:
         entries = matchmaking.get(name)

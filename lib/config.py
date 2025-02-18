@@ -5,8 +5,8 @@ import os
 import logging
 import math
 from abc import ABCMeta
-from typing import Any, Union, ItemsView
-from lib.types import CONFIG_DICT_TYPE, FilterType
+from typing import Any, Union, ItemsView, Callable
+from lib.lichess_types import CONFIG_DICT_TYPE, FilterType
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +210,7 @@ def insert_default_values(CONFIG: CONFIG_DICT_TYPE) -> None:
     set_config_default(CONFIG, "challenge", key="min_days", default=1)
     set_config_default(CONFIG, "challenge", key="block_list", default=[], force_empty_values=True)
     set_config_default(CONFIG, "challenge", key="allow_list", default=[], force_empty_values=True)
+    set_config_default(CONFIG, "challenge", key="max_simultaneous_games_per_user", default=5)
     set_config_default(CONFIG, "correspondence", key="checkin_period", default=600)
     set_config_default(CONFIG, "correspondence", key="move_time", default=60, force_empty_values=True)
     set_config_default(CONFIG, "correspondence", key="disconnect_time", default=300)
@@ -243,24 +244,25 @@ def insert_default_values(CONFIG: CONFIG_DICT_TYPE) -> None:
         for ponder in ["ponder", "uci_ponder"]:
             set_config_default(CONFIG, section, key=ponder, default=False)
 
-    for type in ["hello", "goodbye"]:
+    for greeting in ["hello", "goodbye"]:
         for target in ["", "_spectators"]:
-            set_config_default(CONFIG, "greeting", key=type + target, default="", force_empty_values=True)
+            set_config_default(CONFIG, "greeting", key=greeting + target, default="", force_empty_values=True)
 
     if CONFIG["matchmaking"]["include_challenge_block_list"]:
         CONFIG["matchmaking"]["block_list"].extend(CONFIG["challenge"]["block_list"])
 
 
-def log_config(CONFIG: CONFIG_DICT_TYPE) -> None:
+def log_config(CONFIG: CONFIG_DICT_TYPE, alternate_log_function: Callable[[str], Any] | None = None) -> None:
     """
     Log the config to make debugging easier.
 
     :param CONFIG: The bot's config.
     """
     logger_config = CONFIG.copy()
-    logger_config["token"] = "logger"
-    logger.debug(f"Config:\n{yaml.dump(logger_config, sort_keys=False)}")
-    logger.debug("====================")
+    logger_config["token"] = "logger"  # noqa: S105 (Possible hardcoded password)
+    destination = alternate_log_function or logger.debug
+    destination(f"Config:\n{yaml.dump(logger_config, sort_keys=False)}")
+    destination("====================")
 
 
 def validate_config(CONFIG: CONFIG_DICT_TYPE) -> None:
@@ -319,10 +321,11 @@ def validate_config(CONFIG: CONFIG_DICT_TYPE) -> None:
 
     pgn_directory = CONFIG["pgn_directory"]
     in_docker = os.environ.get("LICHESS_BOT_DOCKER")
-    config_warn(not pgn_directory or not in_docker, "Games will be saved to '{}', please ensure this folder is in a mounted "
-                                                    "volume; Using the Docker's container internal file system will prevent "
-                                                    "you accessing the saved files and can lead to disk "
-                                                    "saturation.".format(pgn_directory))
+    config_warn(not pgn_directory or not in_docker,
+                f"Games will be saved to '{pgn_directory}', please ensure this folder is in a mounted "
+                "volume; Using the Docker's container internal file system will prevent "
+                "you accessing the saved files and can lead to disk "
+                "saturation.")
 
     valid_pgn_grouping_options = ["game", "opponent", "all"]
     config_pgn_choice = CONFIG["pgn_file_grouping"]
@@ -357,7 +360,7 @@ def validate_config(CONFIG: CONFIG_DICT_TYPE) -> None:
     for db_name, valid_selections in selection_choices.items():
         is_online = db_name != "polyglot"
         db_section = (CONFIG["engine"].get("online_moves") or {}) if is_online else CONFIG["engine"]
-        db_config = db_section.get(db_name)
+        db_config = db_section.get(db_name) or {}
         select_key = "selection" if db_name == "polyglot" else "move_quality"
         selection = db_config.get(select_key)
         select = f"{'online_moves:' if is_online else ''}{db_name}:{select_key}"

@@ -2,18 +2,17 @@
 import random
 import logging
 import datetime
-import test_bot.lichess
+import contextlib
 from lib import model
 from lib.timer import Timer, seconds, minutes, days, years
 from collections import defaultdict
 from collections.abc import Sequence
-from lib import lichess
+from lib.lichess import Lichess
 from lib.config import Configuration
 from typing import Optional, Union
-from lib.types import UserProfileType, PerfType, EventType, FilterType
+from lib.lichess_types import UserProfileType, PerfType, EventType, FilterType
 MULTIPROCESSING_LIST_TYPE = Sequence[model.Challenge]
 DAILY_TIMERS_TYPE = list[Timer]
-LICHESS_TYPE = Union[lichess.Lichess, test_bot.lichess.Lichess]
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +43,7 @@ def write_daily_challenges(daily_challenges: DAILY_TIMERS_TYPE) -> None:
 class Matchmaking:
     """Challenge other bots."""
 
-    def __init__(self, li: LICHESS_TYPE, config: Configuration, user_profile: UserProfileType) -> None:
+    def __init__(self, li: Lichess, config: Configuration, user_profile: UserProfileType) -> None:
         """Initialize values needed for matchmaking."""
         self.li = li
         self.variants = list(filter(lambda variant: variant != "fromPosition", config.challenge.variants))
@@ -145,10 +144,8 @@ class Matchmaking:
         """Update our user profile data, to get our latest rating."""
         if self.last_user_profile_update_time.is_expired():
             self.last_user_profile_update_time.reset()
-            try:
+            with contextlib.suppress(Exception):
                 self.user_profile = self.li.get_profile()
-            except Exception:
-                pass
 
     def get_weights(self, online_bots: list[UserProfileType], rating_preference: str, min_rating: int, max_rating: int,
                     game_type: str) -> list[int]:
@@ -379,13 +376,12 @@ def game_category(variant: str, base_time: int, increment: int, days: int) -> st
     game_duration = base_time + increment * 40
     if variant != "standard":
         return variant
-    elif days:
+    if days:
         return "correspondence"
-    elif game_duration < 179:
+    if game_duration < 179:
         return "bullet"
-    elif game_duration < 479:
+    if game_duration < 479:
         return "blitz"
-    elif game_duration < 1499:
+    if game_duration < 1499:
         return "rapid"
-    else:
-        return "classical"
+    return "classical"

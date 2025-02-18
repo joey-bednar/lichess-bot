@@ -6,8 +6,8 @@ import datetime
 from enum import Enum
 from lib.timer import Timer, msec, seconds, sec_str, to_msec, to_seconds, years
 from lib.config import Configuration
-from collections import defaultdict
-from lib.types import UserProfileType, ChallengeType, GameEventType, PlayerType
+from collections import defaultdict, Counter
+from lib.lichess_types import UserProfileType, ChallengeType, GameEventType, PlayerType
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class Challenge:
         return ("rated" if self.rated else "casual") in challenge_cfg.modes
 
     def is_supported_recent(self, config: Configuration, recent_bot_challenges: defaultdict[str, list[Timer]]) -> bool:
-        """Check whether we have played a lot of games with this opponent recently. Only used when the oppoennt is a BOT."""
+        """Check whether we have played a lot of games with this opponent recently. Only used when the opponent is a BOT."""
         # Filter out old challenges
         recent_bot_challenges[self.challenger.name] = [timer for timer
                                                        in recent_bot_challenges[self.challenger.name]
@@ -91,8 +91,8 @@ class Challenge:
         """
         return "" if requirement_met else decline_reason
 
-    def is_supported(self, config: Configuration,
-                     recent_bot_challenges: defaultdict[str, list[Timer]]) -> tuple[bool, str]:
+    def is_supported(self, config: Configuration, recent_bot_challenges: defaultdict[str, list[Timer]],
+                     players_with_active_games: Counter[str]) -> tuple[bool, str]:
         """Whether the challenge is supported."""
         try:
             if self.from_self:
@@ -109,6 +109,8 @@ class Challenge:
                               or self.decline_due_to(self.challenger.name not in config.block_list, "generic")
                               or self.decline_due_to(self.challenger.name in allowed_opponents, "generic")
                               or self.decline_due_to(self.is_supported_recent(config, recent_bot_challenges), "later")
+                              or self.decline_due_to(players_with_active_games[self.challenger.name]
+                                                     < config.max_simultaneous_games_per_user, "later")
                               or self.decline_due_to(is_supported_extra(self), "generic"))
 
             return not decline_reason, decline_reason
@@ -282,9 +284,8 @@ class Player:
         """Get a string representation of `Player`."""
         if self.aiLevel:
             return self.name
-        else:
-            rating = f'{self.rating}{"?" if self.provisional else ""}'
-            return f'{self.title or ""} {self.name} ({rating})'.strip()
+        rating = f'{self.rating}{"?" if self.provisional else ""}'
+        return f'{self.title or ""} {self.name} ({rating})'.strip()
 
     def __repr__(self) -> str:
         """Get a string representation of `Player`."""

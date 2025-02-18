@@ -1,5 +1,5 @@
 """Some type hints that can be accessed by all other python files."""
-from typing import Any, Callable, Optional, Union, TypedDict, Literal, Type
+from typing import Any, Callable, Optional, Union, TypedDict, Literal
 from chess.engine import PovWdl, PovScore, PlayResult, Limit, Opponent
 from chess import Move, Board
 from queue import Queue
@@ -30,6 +30,7 @@ class PerfType(TypedDict, total=False):
     rd: int
     sd: int
     prov: bool
+    prog: int
 
 
 class ProfileType(TypedDict, total=False):
@@ -69,6 +70,7 @@ class UserProfileType(TypedDict, total=False):
     following: bool
     blocking: bool
     followsYou: bool
+    count: dict[str, int]
 
 
 class ReadableType(TypedDict):
@@ -121,7 +123,7 @@ InfoDictValue = Union[PovScore, list[Move], int, float, str, Move, dict[Move, li
 class PlayerType(TypedDict, total=False):
     """Type hint for information on a player."""
 
-    title: str
+    title: Optional[str]
     rating: int
     provisional: bool
     aiLevel: int
@@ -453,5 +455,5 @@ class BackoffDetails(_BackoffDetails, total=False):
     value: Any  # present in the on_predicate decorator case
 
 
-ENGINE_INPUT_ARGS_TYPE = Union[None, OPTIONS_TYPE, Type[BaseException], BaseException, TracebackType, Board, Limit, str, bool]
+ENGINE_INPUT_ARGS_TYPE = Union[None, OPTIONS_TYPE, type[BaseException], BaseException, TracebackType, Board, Limit, str, bool]
 ENGINE_INPUT_KWARGS_TYPE = Union[None, int, bool, list[Move], Opponent]
